@@ -1,5 +1,5 @@
 "use strict";
-const { isASCIIHex } = require("./infra");
+const { isASCIIHex, arrayFromString, stringFromArray } = require("./infra");
 
 function p(char) {
   return char.codePointAt(0);
@@ -39,13 +39,13 @@ function percentEncode(c) {
 }
 
 function percentDecode(input) {
-  const output = Buffer.alloc(input.byteLength);
+  const output = new Uint8Array(input.byteLength);
   let ptr = 0;
   for (let i = 0; i < input.length; ++i) {
     if (input[i] !== p("%") || !isASCIIHex(input[i + 1]) || !isASCIIHex(input[i + 2])) {
       output[ptr++] = input[i];
     } else {
-      output[ptr++] = parseInt(input.slice(i + 1, i + 3).toString(), 16);
+      output[ptr++] = parseInt(stringFromArray(input.slice(i + 1, i + 3)), 16);
       i += 2;
     }
   }
@@ -69,13 +69,13 @@ function parseUrlencoded(input) {
       value = bytes.slice(indexOfEqual + 1);
     } else {
       name = bytes;
-      value = Buffer.alloc(0);
+      value = new Uint8Array(0);
     }
 
-    name = replaceByteInByteSequence(Buffer.from(name), p("+"), p(" "));
-    value = replaceByteInByteSequence(Buffer.from(value), p("+"), p(" "));
+    name = replaceByteInByteSequence(new Uint8Array(name), p("+"), p(" "));
+    value = replaceByteInByteSequence(new Uint8Array(value), p("+"), p(" "));
 
-    output.push([percentDecode(name).toString(), percentDecode(value).toString()]);
+    output.push([stringFromArray(percentDecode(name)), stringFromArray(percentDecode(value))]);
   }
   return output;
 }
@@ -109,7 +109,7 @@ function serializeUrlencoded(tuples, encodingOverride = undefined) {
   let output = "";
   for (const [i, tuple] of tuples.entries()) {
     // TODO: handle encoding override
-    const name = serializeUrlencodedByte(Buffer.from(tuple[0]));
+    const name = serializeUrlencodedByte(arrayFromString(tuple[0]));
     let value = tuple[1];
     if (tuple.length > 2 && tuple[2] !== undefined) {
       if (tuple[2] === "hidden" && name === "_charset_") {
@@ -119,7 +119,7 @@ function serializeUrlencoded(tuples, encodingOverride = undefined) {
         value = value.name;
       }
     }
-    value = serializeUrlencodedByte(Buffer.from(value));
+    value = serializeUrlencodedByte(arrayFromString(value));
     if (i !== 0) {
       output += "&";
     }
@@ -134,7 +134,7 @@ module.exports = {
 
   // application/x-www-form-urlencoded string parser
   parseUrlencoded(input) {
-    return parseUrlencoded(Buffer.from(input));
+    return parseUrlencoded(arrayFromString(input));
   },
 
   // application/x-www-form-urlencoded serializer

@@ -72,7 +72,7 @@ function defaultPort(scheme) {
 }
 
 function utf8PercentEncode(c) {
-  const buf = Buffer.from(c);
+  const buf = infra.arrayFromString(c);
 
   let str = "";
 
@@ -375,7 +375,8 @@ function parseHost(input, isSpecialArg) {
     return parseOpaqueHost(input);
   }
 
-  const domain = percentDecode(Buffer.from(input)).toString();
+  const inputBuffer = infra.arrayFromString(input);
+  const domain = infra.stringFromArray(percentDecode(inputBuffer));
   const asciiDomain = domainToASCII(domain);
   if (asciiDomain === failure) {
     return failure;
@@ -1119,7 +1120,7 @@ URLStateMachine.prototype["parse query"] = function parseQuery(c, cStr) {
       this.encodingOverride = "utf-8";
     }
 
-    const buffer = Buffer.from(this.buffer); // TODO: Use encoding override instead
+    const buffer = infra.arrayFromString(this.buffer);
     for (let i = 0; i < buffer.length; ++i) {
       if (buffer[i] < 0x21 || buffer[i] > 0x7E || buffer[i] === 0x22 || buffer[i] === 0x23 ||
           buffer[i] === 0x3C || buffer[i] === 0x3E) {
